@@ -1,0 +1,10 @@
+{
+  "name": "azure-top",
+  "build": {
+    "dockerfile": "Containerfile",
+    "context": ".",
+  },
+  "mounts": [
+    "type=bind,source=${localEnv:SSH_AUTH_SOCK},target=/.ssh-agent.sock,consistency=cached"
+  ],
+}
