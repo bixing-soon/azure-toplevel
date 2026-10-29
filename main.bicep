@@ -1,41 +1,47 @@
 targetScope = 'subscription'
 
-@description('Location of resource groups.')
+@description('Location of the resource groups.')
 @allowed([
-  'australiaeast',
-  'australiasoutheast',
+  'australiaeast'
+  'australiasoutheast'
   'australiacentral'
 ])
-param location string
+param rGroupLocation string = 'australiaeast'
 
-
-@description('Prefix for resource group names: rg-<prefix>-<environment>.')
-@minLength(2)
-@maxLength(40)
-param prefix string
-
-@description('Environments to create a resource group for.')
+@description('Names of the resource groups to create.')
 @minLength(1)
-param environments array = [
-  'dev'
-]
+param rGroupNames string[]
 
-@description('Region for the resource groups (metadata only).')
-param location string = 'australiaeast'
+@description('Names of the storage accounts to create.')
+param stAccNames string[]
+param stAccSkuName string = 'Standard_LRS'
+param stAccKind string = 'StorageV2'
+param stAccAccessTier string = 'Hot'
 
-@description('Tags applied to every resource group.')
-param tags object = {}
-
-resource resourceGroups 'Microsoft.Resources/resourceGroups@2024-03-01' = [
-  for environment in environments: {
-    name: 'rg-${prefix}-${environment}'
-    location: location
-    tags: union(tags, {
-      environment: environment
-      managedBy: 'bicep'
-    })
+module rGroupModule './modules/resourceGroup.bicep' = [for name in rGroupNames: {
+  name: '${name}-module'
+  params: {
+    rGroupName: name
+    rGroupLocation: rGroupLocation
   }
-]
+}]
+
+module stAccModule './modules/storageAccount.bicep' = [for name in stAccNames: {
+  name: '${name}-module'
+  scope: resourceGroup(rGroupNames[0]) // do not change ordering of resource groups in main.bicepparam plz
+  dependsOn: [
+    rGroupModule
+  ]
+  params: {
+    stAccName: name
+    stAccSkuName: stAccSkuName
+    stAccKind: stAccKind
+    stAccAccessTier: stAccAccessTier
+  }
+}]
 
 @description('Created resource group names.')
-output resourceGroupNames array = [for (environment, i) in environments: resourceGroups[i].name]
+output resourceGroupNames array = [for (name, i) in rGroupNames: rGroupModule[i].outputs.rGroupName]
+
+@description('Created storage account names.')
+output storageAccountNames array = [for (name, i) in stAccNames: stAccModule[i].outputs.stAccName]
