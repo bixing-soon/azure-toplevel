@@ -35,7 +35,6 @@ what was created.
 |---|---|---|
 | `rGroupLocation` | `australiaeast` | Region for the resource group metadata |
 | `rGroupNames` | — (required) | Names of the resource groups to create |
-| `stAccRGroupName` | `rg-tfstate` | Resource group the storage accounts are created in |
 | `stAccNames` | — (required) | Storage account names (3-24 lowercase alphanumeric chars, globally unique) |
 | `stAccSkuName` | `Standard_LRS` | Storage account SKU |
 | `stAccKind` | `StorageV2` | Storage account kind |
