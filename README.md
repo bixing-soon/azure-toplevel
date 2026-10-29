@@ -1,6 +1,6 @@
 # azure-toplevel
 
-Subscription-scope Bicep for the top-level resources everything else bootstraps from: resource groups, a storage account behind a private endpoint, and the shared VNet + private DNS zone.
+Subscription-scope Bicep for top-level resources. These include resource groups, storage account behind a private endpoint, and the shared VNet + private DNS zone.
 
 ## What gets deployed
 
@@ -47,11 +47,11 @@ All parameters are required - values live in `parameters/main.bicepparam`.
 
 ## Networking
 
-Storage accounts are private-only: `publicNetworkAccess: 'Disabled'`, ACL `Deny`, no shared key (Entra ID only). Each account gets a private endpoint, and its A record is registered automatically by the endpoint's DNS zone group.
+Storage accounts are private-only: `publicNetworkAccess: 'Disabled'`, ACL `Deny`, Entra ID only. Each account gets a private endpoint, and its A record is registered automatically by the endpoint's DNS zone group.
 
-The blob FQDN resolves only inside the VNet, so nothing can reach the account until a host exists there (the jumpbox is not built yet). Data-plane auth is Entra ID: `az storage ... --auth-mode login`, or `use_azuread_auth = true` in the Terraform azurerm backend.
+The blob FQDN resolves only inside the VNet. Auth is Entra ID for Terraform so `az storage ... --auth-mode login`, or `use_azuread_auth = true` in the Terraform azurerm backend.
 
-Cost: ~$0.01/hr per private endpoint, plus ~$0.50/mo for the DNS zone.
+Cost: ~$0.01/hr per private endpoint, plus ~$0.50/mo for the DNS zone. There is also egress fees for traffic leaving the VNet.
 
 ## Scripts
 

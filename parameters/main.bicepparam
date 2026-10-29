@@ -5,9 +5,10 @@ using '../main.bicep'
 
 param location = 'australiaeast'
 param rGroupNames = [
-  'rg-tfstate' // index 0: storage acc + private endpoints
-  'rg-vnet' // index 1: vnet + private DNS zone
-  'rg-email'
+  'rg-tfstate' // 0: storage acc + private endpoints
+  'rg-vnet' // 1: vnet + private DNS zone
+  'rg-vpn' // 2: vm with tailscale in it
+  'rg-email' // 3: email smtp server
 ]
 
 // ______________________________________________________
@@ -26,9 +27,9 @@ param stAccAccessTier = 'Hot'
 
 param vnetName = 'vnet-toplevel'
 param vnetAddressPrefix = '10.100.0.0/16'
-param vnetSubnets = [{
-  name: 'snet-private-endpoints'
+param vnetSubnets = [{ // DO NOT DISPLACE THE ORDER
+  name: 'snet-pe'
   addressPrefix: '10.100.1.0/24'
 }]
-param vnetPeSubnetName = 'snet-private-endpoints'
 param privateDnsZoneName = 'privatelink.blob.core.windows.net'
+// must be that URL cuz its the only valid one

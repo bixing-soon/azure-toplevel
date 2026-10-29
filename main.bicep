@@ -59,12 +59,10 @@ param vnetSubnets {
   addressPrefix: string
 }[]
 
-@description('Subnet that hosts the private endpoints. Must match an entry in vnetSubnets.')
-param vnetPeSubnetName string
-
 @description('Private DNS zone for the storage blob private endpoint.')
 param privateDnsZoneName string
 
+// scoped to rg-vnet (the vnet and private dns zone)
 module vnetModule './modules/vnet.bicep' = {
   name: '${vnetName}-module'
   scope: resourceGroup(rGroupNames[1]) // do not change ordering of resource groups in main.bicepparam plz
@@ -80,14 +78,15 @@ module vnetModule './modules/vnet.bicep' = {
   }
 }
 
-// endpoint for the bixingsttfstate storage account
+// endpoint for the bixingsttfstate storage account, scoped to rg-tfstate
+// WARNING, it has a design flaw where it places all Storage Account PEs into the same snet-pe subnet instead of per-workload, to be fixed
 module stAccPeModule './modules/privateEndpoint.bicep' = [for (name, i) in stAccNames: {
   name: '${name}-pe-module'
   scope: resourceGroup(rGroupNames[0]) // do not change ordering of resource groups in main.bicepparam plz
   params: {
     peName: 'pe-${name}-blob'
     location: location
-    vnetSubnetId: '${vnetModule.outputs.vnetId}/subnets/${vnetPeSubnetName}'
+    vnetSubnetId: '${vnetModule.outputs.vnetId}/subnets/${vnetSubnets[0].name}' // relies on order in main.bicepparam
     stAccId: stAccModule[i].outputs.stAccId
     privateDnsZoneId: vnetModule.outputs.privateDnsZoneId
   }

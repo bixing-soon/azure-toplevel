@@ -1,4 +1,4 @@
-param peName string
+param peName string // 'pe-{stAccName}-blob'
 param location string
 param vnetSubnetId string
 param stAccId string
