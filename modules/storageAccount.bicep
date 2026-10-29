@@ -1,7 +1,25 @@
 param stAccName string
-param stAccSkuName string = 'Standard_LRS'
-param stAccKind string = 'StorageV2'
-param stAccAccessTier string = 'Hot'
+
+@allowed([
+  'Standard_LRS'
+  'Standard_GRS'
+  'Standard_ZRS'
+])
+param stAccSkuName string
+
+@allowed([
+  'Storage'
+  'StorageV2'
+  'BlobStorage'
+])
+param stAccKind string
+
+@allowed([
+  'Hot'
+  'Cool'
+  'Cold'
+])
+param stAccAccessTier string
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: stAccName
@@ -12,10 +30,10 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   kind: stAccKind
   properties: {
     accessTier: stAccAccessTier
-    allowBlobPublicAccess: true
-    allowCrossTenantReplication: true
-    allowSharedKeyAccess: true
-    defaultToOAuthAuthentication: false
+    allowBlobPublicAccess: false
+    allowCrossTenantReplication: false
+    allowSharedKeyAccess: false
+    defaultToOAuthAuthentication: true
     encryption: {
       keySource: 'Microsoft.Storage'
       services: {
@@ -32,11 +50,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     isSftpEnabled: false
     minimumTlsVersion: 'TLS1_2'
     networkAcls: {
-      defaultAction: 'Allow'
+      defaultAction: 'Deny'
+      bypass: 'AzureServices'
     }
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
     supportsHttpsTrafficOnly: true
   }
 }
 
 output stAccName string = storageAccount.name
+output stAccId string = storageAccount.id

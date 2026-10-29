@@ -1,11 +1,17 @@
 targetScope = 'subscription'
 
 param rGroupName string
-param rGroupLocation string = 'australiaeast'
+
+@allowed([
+  'australiaeast'
+  'australiasoutheast'
+  'australiacentral'
+])
+param location string
 
 resource rGroup 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: rGroupName
-  location: rGroupLocation
+  location: location
 }
 
 output rGroupName string = rGroup.name

@@ -1,51 +1,63 @@
 # azure-toplevel
 
-Bicep templates for the **top-level** Azure subscription resources that everything else bootstraps from. This includes resource groups, storage accounts, blob containers and Entra ID objects.
+Subscription-scope Bicep for the top-level resources everything else bootstraps from: resource groups, a storage account behind a private endpoint, and the shared VNet + private DNS zone.
 
-Subscription-scope only.
+## What gets deployed
 
-## Quick start
+| Resource | Name | Resource group |
+|---|---|---|
+| Resource groups | `rg-tfstate`, `rg-vnet`, `rg-email` | subscription |
+| Storage account | `bixingsttfstate` | index 0 |
+| Private endpoint (one per account) | `pe-<account>-blob` | index 0 |
+| VNet + subnet | `vnet-toplevel` (`10.100.0.0/16`), `snet-private-endpoints` (`10.100.1.0/24`) | index 1 |
+| Private DNS zone + VNet link | `privatelink.blob.core.windows.net` | index 1 |
 
-Either open the repo in the devcontainer, or locally with `az` + Bicep
-(`az bicep install`).
+`rGroupNames` is positional: index 0 = storage accounts + endpoints, index 1 = VNet + DNS zone.
+
+## Deploy
+
+Open the devcontainer, or install `az` + Bicep (`az bicep install`).
 
 ```bash
 az login
 az account set --subscription "<subscription name or id>"
 
-az deployment sub create \
-  --location australiaeast \
-  --template-file main.bicep \
-  --parameters parameters/main.bicepparam \
-  --what-if
-
-az deployment sub create \
-  --location australiaeast \
-  --template-file main.bicep \
-  --parameters parameters/main.bicepparam
+az deployment sub create -n <deployment-name> -l australiaeast \
+  -f main.bicep -p parameters/main.bicepparam --what-if
+# drop --what-if to apply
 ```
 
-Use `--name <deployment-name>` for repeatable names (e.g. `rg-toplevel-dev-01`),
-and `az deployment sub show --name <name> --query properties.outputs` to read
-what was created.
+Outputs: `resourceGroupNames`, `storageAccountNames`, `vnetId`
+(`az deployment sub show -n <deployment-name> --query properties.outputs`).
 
 ## Parameters
 
-| Parameter | Default | Purpose |
-|---|---|---|
-| `rGroupLocation` | `australiaeast` | Region for the resource group metadata |
-| `rGroupNames` | — (required) | Names of the resource groups to create |
-| `stAccNames` | — (required) | Storage account names (3-24 lowercase alphanumeric chars, globally unique) |
-| `stAccSkuName` | `Standard_LRS` | Storage account SKU |
-| `stAccKind` | `StorageV2` | Storage account kind |
-| `stAccAccessTier` | `Hot` | Blob access tier |
+| Parameter | Purpose |
+|---|---|
+| `location` | Region for everything. Australian regions only: `australiaeast`, `australiasoutheast`, `australiacentral` |
+| `rGroupNames` | Resource groups to create; positional, see above |
+| `stAccNames` | Storage account names (3-24 lowercase alphanumeric, globally unique) |
+| `stAccSkuName` / `stAccKind` / `stAccAccessTier` | Account SKU / kind / blob tier |
+| `vnetName` / `vnetAddressPrefix` | VNet name and address space |
+| `vnetSubnets` | Subnets to create in the VNet, as `{ name, addressPrefix }` objects |
+| `vnetPeSubnetName` | Which subnet hosts the private endpoints (must match a `vnetSubnets` entry) |
+| `privateDnsZoneName` | `privatelink.blob.core.windows.net` |
+
+All parameters are required - values live in `parameters/main.bicepparam`.
+
+## Networking
+
+Storage accounts are private-only: `publicNetworkAccess: 'Disabled'`, ACL `Deny`, no shared key (Entra ID only). Each account gets a private endpoint, and its A record is registered automatically by the endpoint's DNS zone group.
+
+The blob FQDN resolves only inside the VNet, so nothing can reach the account until a host exists there (the jumpbox is not built yet). Data-plane auth is Entra ID: `az storage ... --auth-mode login`, or `use_azuread_auth = true` in the Terraform azurerm backend.
+
+Cost: ~$0.01/hr per private endpoint, plus ~$0.50/mo for the DNS zone.
 
 ## Scripts
 
 | Script | What it does |
 |---|---|
-| `scripts/create-sp.sh` | `az ad sp create-for-rbac ... --create-cert` writes a `.pem` and prints the appId/tenant. `--create-cert` is for local/CI credential use only. |
-| `scripts/setup-git.sh` | Configures git identity, SSH commit signing and `safe.directory`. |
+| `scripts/create-sp.sh` | `az ad sp create-for-rbac --create-cert`; writes a `.pem` (local/CI use only) |
+| `scripts/setup-git.sh` | Git identity, SSH commit signing, `safe.directory` |
 
-The generated `*.pem` / `*.pfx` / `*.key` / `age-key.txt` files are git-ignored.
-Plz never commit a credential.
+Generated `*.pem` / `*.pfx` / `*.key` / `age-key.txt` files are git-ignored. Plz never commit a credential.
