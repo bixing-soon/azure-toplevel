@@ -5,10 +5,10 @@ using '../main.bicep'
 
 param location = 'australiaeast'
 param rGroupNames = [
-  'rg-tfstate' // 0: storage acc + private endpoints
-  'rg-vnet' // 1: vnet + private DNS zone
-  'rg-vpn' // 2: vm with tailscale in it
-  'rg-email' // 3: email smtp server
+  'rg-tfstate' // 0: terraform storage account
+  'rg-vnet' // 1: vnet
+  'rg-email' // 2: email smtp server
+  'rg-gpu_vm' // 3: gpu vm
 ]
 
 // ______________________________________________________
@@ -21,15 +21,14 @@ param stAccNames = [
 param stAccSkuName = 'Standard_LRS'
 param stAccKind = 'StorageV2'
 param stAccAccessTier = 'Hot'
+param stAccPublicNetworkAccess = 'Enabled'
 
 // ______________________________________________________
 // Virtual Network:
 
 param vnetName = 'vnet-toplevel'
 param vnetAddressPrefix = '10.100.0.0/16'
-param vnetSubnets = [{ // DO NOT DISPLACE THE ORDER
+param vnetSubnets = [{
   name: 'snet-pe'
   addressPrefix: '10.100.1.0/24'
 }]
-param privateDnsZoneName = 'privatelink.blob.core.windows.net'
-// must be that URL cuz its the only valid one

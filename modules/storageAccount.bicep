@@ -21,6 +21,12 @@ param stAccKind string
 ])
 param stAccAccessTier string
 
+@allowed([
+  'Enabled'
+  'Disabled'
+])
+param stAccPublicNetworkAccess string
+
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: stAccName
   location: resourceGroup().location
@@ -50,10 +56,9 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     isSftpEnabled: false
     minimumTlsVersion: 'TLS1_2'
     networkAcls: {
-      defaultAction: 'Deny'
-      bypass: 'AzureServices'
+      defaultAction: 'Allow'
     }
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: stAccPublicNetworkAccess
     supportsHttpsTrafficOnly: true
   }
 }
