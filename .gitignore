@@ -3,3 +3,9 @@ age-key.txt
 *.pfx
 *.key
 *.crt
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+crash.log

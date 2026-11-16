@@ -27,7 +27,7 @@ param stAccAccessTier string
 ])
 param stAccPublicNetworkAccess string
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2026-09-01' = {
   name: stAccName
   location: resourceGroup().location
   sku: {
@@ -60,6 +60,30 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     }
     publicNetworkAccess: stAccPublicNetworkAccess
     supportsHttpsTrafficOnly: true
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2026-09-01' = {
+  parent: storageAccount
+  name: 'default'
+  properties: {
+    isVersioningEnabled: true
+    deleteRetentionPolicy: {
+      enabled: true
+      days: 30
+    }
+    containerDeleteRetentionPolicy: {
+      enabled: true
+      days: 30
+    }
+  }
+}
+
+resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2026-09-01' = {
+  parent: blobService
+  name: 'tfstate'
+  properties: {
+    publicAccess: 'None'
   }
 }
 
